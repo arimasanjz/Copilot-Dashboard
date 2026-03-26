@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Microsoft Copilot — Executive Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:         #f3f4f6;
+    --surface:    #ffffff;
+    --surface2:   #f9fafb;
+    --border:     #e5e7eb;
+    --border2:    #d1d5db;
+    --text:       #111827;
+    --muted:      #6b7280;
+    --muted2:     #9ca3af;
+    --primary:   #e87722;
+    --primary-soft: #f29f67;
+
+    --green:     #16a34a;
+    --green-soft:#dcfce7;
+
+    --amber:     #d97706;
+    --amber-soft:#fef3c7;
+
+    --red:       #dc2626;
+    --red-soft:  #fee2e2;
+
+    --blue:      #2563eb;
+    --blue-soft: #dbeafe;
+
+    --orange: #e87722;
+    --orange2:#f29f67;
+    --orange3:#fde6d5;
+    --orange-bg:#fff5ed;
+    --orange-glow: rgba(232,119,34,0.12);
+    --green:      #16a34a;
+    --yellow:     #d97706;
+    --red:        #dc2626;
+    --blue:       #2563eb;
+    --card-r:     8px;
+    --shadow:     0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md:  0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 13px;
+  }
+
+  /* ── Top nav ── */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 2px solid var(--orange);
+    padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 52px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .copilot-icon {
+    width: 32px; height: 32px; border-radius: 6px;
+    background: linear-gradient(135deg, var(--orange) 0%, #f59e0b 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 14px; letter-spacing: -.5px;
+  }
+  .topbar-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .topbar-sub { font-size: 11px; color: var(--muted); }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+  .report-date {
+    font-size: 11px; color: var(--muted);
+    background: var(--bg); border: 1px solid var(--border2);
+    padding: 4px 10px; border-radius: 4px;
+  }
+  .report-date span { color: var(--orange); font-weight: 600; }
+
+  /* ── Tab nav ── */
+  .tabnav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex; gap: 0;
+  }
+  .tab-btn {
+    padding: 12px 20px; font-size: 12px; font-weight: 500;
+    color: var(--muted); background: none; border: none;
+    cursor: pointer; border-bottom: 3px solid transparent;
+    transition: all .15s; letter-spacing: .01em;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tab-btn:hover { color: var(--text); background: var(--bg); }
+  .tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); font-weight: 600; }
+  .tab-icon { font-size: 14px; }
+
+  /* ── Page ── */
+  .page { max-width: 1440px; margin: 0 auto; padding: 20px 24px 48px; }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* ── Section header ── */
+  .section-hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-size: 11px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::before { content:''; width:3px; height:14px; background: var(--orange); border-radius:2px; display:inline-block; }
+  .section-badge {
+    background: var(--orange-bg); color: var(--orange);
+    border: 1px solid var(--orange3); border-radius: 4px;
+    font-size: 10px; font-weight: 600; padding: 2px 7px;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--card-r); box-shadow: var(--shadow);
+    padding: 16px;
+  }
+  .card-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted); margin-bottom: 12px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+
+  /* ── KPI Grid ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 16px; }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--card-r); padding: 14px 16px;
+    box-shadow: var(--shadow); position: relative; overflow: hidden;
+    transition: box-shadow .2s;
+  }
+  .kpi-card:hover { box-shadow: var(--shadow-md); }
+  .kpi-card.accent { border-left: 3px solid var(--orange); }
+  .kpi-card.green  { border-left: 3px solid var(--green); }
+  .kpi-card.yellow { border-left: 3px solid var(--yellow); }
+  .kpi-card.red    { border-left: 3px solid var(--red); }
+
+.kpi-card.primary { border-left: 3px solid var(--primary); }
+.kpi-card.success { border-left: 3px solid var(--green); }
+.kpi-card.warning { border-left: 3px solid var(--amber); }
+.kpi-card.danger  { border-left: 3px solid var(--red); }
+.kpi-card.info    { border-left: 3px solid var(--blue); }
+
+  .kpi-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 8px; }
+  .kpi-value { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; letter-spacing: -.02em; }
+  .kpi-value.orange { color: var(--orange); }
+  .kpi-sub { font-size: 10px; color: var(--muted2); margin-top: 4px; }
+
+  /* ── Grid layouts ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+  .grid-4-6 { display: grid; grid-template-columns: 4fr 6fr; gap: 16px; }
+  .grid-6-4 { display: grid; grid-template-columns: 6fr 4fr; gap: 16px; }
+  .grid-3-2 { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; }
+  .mb16 { margin-bottom: 16px; }
+
+  /* ── Chart containers ── */
+  .chart-wrap { position: relative; }
+  .chart-wrap canvas { max-height: 280px; }
+  .chart-wrap-sm canvas { max-height: 220px; }
+  .chart-wrap-lg canvas { max-height: 340px; }
+
+  /* ── Table ── */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .data-table th {
+    background: var(--surface2); color: var(--muted);
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    padding: 8px 10px; text-align: left; border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  .data-table th.right { text-align: right; }
+  .data-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .data-table td.right { text-align: right; font-variant-numeric: tabular-nums; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--surface2); }
+  .data-table .num { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .tbl-scroll { overflow-y: auto; max-height: 320px; }
+  .tbl-scroll::-webkit-scrollbar { width: 4px; }
+  .tbl-scroll::-webkit-scrollbar-track { background: var(--bg); }
+  .tbl-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  /* ── Health flags ── */
+  .flag { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding: 2px 7px; border-radius: 3px; }
+  .flag-g { background:#dcfce7; color:#16a34a; }
+  .flag-y { background:#fef9c3; color:#d97706; }
+  .flag-r { background:#fee2e2; color:#dc2626; }
+
+  /* ── Avatar ── */
+  .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--orange-bg); color: var(--orange);
+    font-size: 10px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--orange3); flex-shrink: 0;
+  }
+  .person-cell { display: flex; align-items: center; gap: 8px; }
+  .person-name { font-weight: 600; color: var(--text); }
+  .person-div { font-size: 10px; color: var(--muted); }
+
+  /* ── Insight callout ── */
+  .insight {
+    background: var(--orange-bg); border: 1px solid var(--orange3);
+    border-left: 4px solid var(--orange);
+    border-radius: var(--card-r); padding: 12px 16px;
+    font-size: 12px; color: #7c2d12; line-height: 1.6;
+  }
+  .insight strong { color: var(--orange); }
+
+  /* ── Comparison cards ── */
+  .compare-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--card-r); padding: 16px; text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .compare-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 6px; }
+  .compare-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; margin-bottom: 10px;
+  }
+  .badge-emp { background: #dbeafe; color: #1d4ed8; }
+  .badge-con { background: var(--orange-bg); color: var(--orange); }
+  .compare-val { font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -.02em; line-height: 1; }
+  .compare-sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
+  .compare-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+
+  /* ── App usage dots ── */
+  .app-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .app-name { width: 150px; font-size: 11px; color: var(--text); flex-shrink: 0; }
+  .app-bar-wrap { flex: 1; background: var(--bg); border-radius: 2px; height: 14px; overflow: hidden; }
+  .app-bar { height: 100%; background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 2px; transition: width .6s ease; }
+  .app-count { width: 45px; text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .app-pct { width: 38px; text-align: right; font-size: 11px; font-weight: 600; color: var(--orange); }
+
+  /* ── Mini stat row ── */
+  .stat-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+  .stat-item { text-align: center; }
+  .stat-num { font-size: 18px; font-weight: 700; color: var(--text); }
+  .stat-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+  /* ── Intensity bar ── */
+  .intensity-bar { height: 6px; border-radius: 3px; background: var(--bg); overflow: hidden; margin-top: 4px; }
+  .intensity-fill { height: 100%; border-radius: 3px; }
+  .fill-high   { background: linear-gradient(90deg,#16a34a,#4ade80); }
+  .fill-med    { background: linear-gradient(90deg,var(--orange),#fbbf24); }
+  .fill-low    { background: linear-gradient(90deg,#dc2626,#f87171); }
+
+  /* ── Region tag ── */
+  .region-tag { display:inline-block; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:600; }
+  .tag-apac  { background:#dbeafe; color:#1d4ed8; }
+  .tag-amer  { background:#dcfce7; color:#16a34a; }
+  .tag-emea  { background:#fef9c3; color:#d97706; }
+
+  /* ── Donut legend ── */
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; justify-content: center; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Rank number ── */
+  .rank { width: 22px; height: 22px; border-radius: 50%; background: var(--orange-bg); color: var(--orange); font-size: 10px; font-weight: 700; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--orange3); flex-shrink:0; }
+  .rank-gold { background:#fef3c7; color:#d97706; border-color:#fde68a; }
+  .rank-silver { background:#f3f4f6; color:#6b7280; border-color:#d1d5db; }
+  .rank-bronze { background:#fef3c7; color:#b45309; border-color:#fcd34d; }
+
+  @media(max-width:1100px) {
+    .kpi-grid { grid-template-columns: repeat(3,1fr); }
+    .grid-4 { grid-template-columns: repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="copilot-icon">Co</div>
+    <div>
+      <div class="topbar-title">Microsoft Copilot — Executive Intelligence</div>
+      <div class="topbar-sub">Euromonitor International · Usage Analytics</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="report-date">Report Date: <span>16 March 2026</span></div>
+  </div>
+</div>
+
+<!-- Tab Navigation -->
+<div class="tabnav">
+  <button class="tab-btn active" onclick="switchTab(0)"><span class="tab-icon">⬜</span> Overview</button>
+  <button class="tab-btn" onclick="switchTab(1)"><span class="tab-icon">◫</span> By Division</button>
+  <button class="tab-btn" onclick="switchTab(2)"><span class="tab-icon">◎</span> By Location</button>
+  <button class="tab-btn" onclick="switchTab(3)"><span class="tab-icon">◈</span> Employee vs Contractor</button>
+  <button class="tab-btn" onclick="switchTab(4)"><span class="tab-icon">◧</span> By Department</button>
+  <button class="tab-btn" onclick="switchTab(5)"><span class="tab-icon">★</span> Top Performers</button>
+</div>
+
+<div class="page">
+
+<!-- ═══════════ TAB 0: OVERVIEW ═══════════ -->
+<div class="tab-pane active" id="tab-0">
+
+  <!-- KPI Row -->
+  <div class="kpi-grid" style="margin-top:4px">
+    <div class="kpi-card primary">
+      <div class="kpi-label">Total Prompts</div>
+      <div class="kpi-value orange">676,722</div>
+      <div class="kpi-sub">All Apps · All Users</div>
+    </div>
+    <div class="kpi-card primary">
+      <div class="kpi-label">Active Users</div>
+      <div class="kpi-value orange">1,411</div>
+      <div class="kpi-sub">Prompts > 0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg Prompts/Person</div>
+      <div class="kpi-value">479.6</div>
+      <div class="kpi-sub">Across licensed seats</div>
+    </div>
+    <div class="kpi-card success">
+      <div class="kpi-label">Avg Active Days</div>
+      <div class="kpi-value" style="color:var(--green)">54.3</div>
+      <div class="kpi-sub">Per user this period</div>
+    </div>
+    <div class="kpi-card warning">
+      <div class="kpi-label">Low-Use Count</div>
+      <div class="kpi-value" style="color:var(--yellow)">147</div>
+      <div class="kpi-sub">&lt; 50 prompts · 10.4%</div>
+    </div>
+    <div class="kpi-card danger">
+      <div class="kpi-label">Inactive Seats</div>
+      <div class="kpi-value" style="color:var(--red)">0</div>
+      <div class="kpi-sub">Licensed, 0 prompts</div>
+    </div>
+  </div>
+
+  <!-- Row 2: App adoption + Prompt dist -->
+  <div class="grid-6-4 mb16">
+    <div class="card">
+      <div class="card-title">App Adoption — Users with Activity</div>
+      <div id="app-bars"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Prompt Volume Distribution</div>
+      <div class="chart-wrap"><canvas id="promptDistChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 3: Seat util + Low use + Channel mix -->
+  <div class="grid-3 mb16">
+    <div class="card">
+      <div class="card-title">Seat Utilisation</div>
+      <div class="chart-wrap-sm"><canvas id="seatDonut"></canvas></div>
+      <div class="legend" id="seatLegend"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Engagement Level Split</div>
+      <div class="chart-wrap-sm"><canvas id="engagementDonut"></canvas></div>
+      <div class="legend" id="engLegend"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Chat Channel Mix</div>
+      <div class="chart-wrap-sm"><canvas id="channelDonut"></canvas></div>
+      <div class="legend" id="channelLegend"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ TAB 1: BY DIVISION ═══════════ -->
+<div class="tab-pane" id="tab-1">
+
+  <div class="grid-2 mb16">
+    <div class="card">
+      <div class="card-title">Total Prompts by Division</div>
+      <div class="chart-wrap-lg"><canvas id="divPromptChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Average Prompts per Person</div>
+      <div class="chart-wrap-lg"><canvas id="divAvgChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Division Health Matrix</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Division</th>
+          <th class="right">Users</th>
+          <th class="right">Total Prompts</th>
+          <th class="right">Avg / Person</th>
+          <th class="right">Low-Use %</th>
+          <th class="right">Low-Use Count</th>
+          <th>Health</th>
+        </tr>
+      </thead>
+      <tbody id="divTable"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ═══════════ TAB 2: BY LOCATION ═══════════ -->
+<div class="tab-pane" id="tab-2">
+
+  <div class="grid-6-4 mb16">
+    <div class="card">
+      <div class="card-title">Total Prompts by Location</div>
+      <div class="chart-wrap-lg"><canvas id="locPromptChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Region Split</div>
+      <div class="chart-wrap"><canvas id="regionDonut"></canvas></div>
+      <div class="legend" id="regionLegend"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Location Intensity Matrix</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Location</th>
+          <th>Region</th>
+          <th class="right">Users</th>
+          <th class="right">Total Prompts</th>
+          <th class="right">Avg / Person</th>
+          <th class="right">Low-Use %</th>
+          <th>Intensity</th>
+        </tr>
+      </thead>
+      <tbody id="locTable"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ═══════════ TAB 3: EMP vs CONTRACTOR ═══════════ -->
+<div class="tab-pane" id="tab-3">
+
+  <div class="compare-row" style="grid-template-columns:repeat(6,1fr)">
+    <div class="compare-card">
+      <div class="compare-label">Avg Prompts</div>
+      <div style="margin-bottom:8px"><span class="compare-badge badge-emp">Employee</span></div>
+      <div class="compare-val">492</div>
+      <div class="compare-sub">per person</div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-label">Avg Prompts</div>
+      <div style="margin-bottom:8px"><span class="compare-badge badge-con">Contractor</span></div>
+      <div class="compare-val" style="color:var(--orange)">249</div>
+      <div class="compare-sub">per person</div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-label">Active Users</div>
+      <div style="margin-bottom:8px"><span class="compare-badge badge-emp">Employee</span></div>
+      <div class="compare-val">1,067</div>
+      <div class="compare-sub">75.6%</div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-label">Active Users</div>
+      <div style="margin-bottom:8px"><span class="compare-badge badge-con">Contractor</span></div>
+      <div class="compare-val" style="color:var(--orange)">344</div>
+      <div class="compare-sub">24.4%</div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-label">Low-Use %</div>
+      <div style="margin-bottom:8px"><span class="compare-badge badge-emp">Employee</span></div>
+      <div class="compare-val" style="color:var(--green)">10.1%</div>
+      <div class="compare-sub">&lt;50 prompts</div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-label">Low-Use %</div>
+      <div style="margin-bottom:8px"><span class="compare-badge badge-con">Contractor</span></div>
+      <div class="compare-val" style="color:var(--red)">16.2%</div>
+      <div class="compare-sub">&lt;50 prompts</div>
+    </div>
+  </div>
+
+  <div class="insight mb16">
+    <strong>⚡ Leadership Insight:</strong> Employees average <strong>492 prompts/person</strong> vs contractors at <strong>249</strong> — a <strong>2× gap</strong>. Contractors also show a higher low-use rate (16.2% vs 10.1%) and a <strong>63% activity gap</strong> in active days. Contractors represent a clear <strong>coaching priority</strong> for Q2 adoption programs. 54% of contractors are based in Bangalore.
+  </div>
+
+  <div class="grid-2 mb16">
+    <div class="card">
+      <div class="card-title">Prompt Volume Comparison</div>
+      <div class="chart-wrap"><canvas id="empConBar"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Contractor Location Distribution</div>
+      <div class="chart-wrap"><canvas id="contractorLocChart"></canvas></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ TAB 4: BY DEPARTMENT ═══════════ -->
+<div class="tab-pane" id="tab-4">
+
+  <div class="grid-2 mb16">
+    <div class="card">
+      <div class="card-title">Top 20 Departments — Total Prompts</div>
+      <div class="chart-wrap-lg" style="max-height:420px"><canvas id="deptPromptChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Top 20 Departments — Avg Prompts / Person</div>
+      <div class="chart-wrap-lg" style="max-height:420px"><canvas id="deptAvgChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Full Department Health Matrix <span class="section-badge">43 Departments</span></div>
+    <div class="tbl-scroll" style="max-height:420px">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Department</th>
+            <th class="right">Users</th>
+            <th class="right">Total Prompts</th>
+            <th class="right">Avg / Person</th>
+            <th class="right">Low-Use %</th>
+            <th class="right">Low-Use Count</th>
+            <th>Health</th>
+          </tr>
+        </thead>
+        <tbody id="deptTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ TAB 5: TOP PERFORMERS ═══════════ -->
+<div class="tab-pane" id="tab-5">
+
+  <div class="grid-2 mb16">
+    <div class="card">
+      <div class="card-title">Top 10 Users by Total Prompts</div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th class="right">Prompts</th>
+            <th class="right">Active Days</th>
+          </tr>
+        </thead>
+        <tbody id="top10Table"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">Division Champions — Avg Prompts/Person</div>
+      <div class="chart-wrap-lg"><canvas id="divChampChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Location Average Intensity</div>
+    <div class="chart-wrap"><canvas id="locIntensityChart"></canvas></div>
+  </div>
+
+</div>
+</div><!-- /page -->
+
+<script>
+// ── Palette ──
+const ORANGE  = '#f97316';
+const ORANGE2 = '#fb923c';
+const ORANGE3 = '#fdba74';
+const GRAY1   = '#9ca3af';
+const GRAY2   = '#d1d5db';
+const GRAY3   = '#e5e7eb';
+const BLUE    = '#2563eb';
+const GREEN   = '#16a34a';
+const RED     = '#dc2626';
+const YELLOW  = '#d97706';
+
+// ── Tab switching ──
+const tabs = document.querySelectorAll('.tab-btn');
+const panes = document.querySelectorAll('.tab-pane');
+function switchTab(i) {
+  tabs.forEach((t,j) => t.classList.toggle('active', i===j));
+  panes.forEach((p,j) => p.classList.toggle('active', i===j));
+}
+
+// ── Default chart options ──
+Chart.defaults.font.family = "'Segoe UI', 'Inter', sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#6b7280';
+
+function baseOpts(extra={}) {
+  return Object.assign({
+    responsive: true, maintainAspectRatio: true,
+    plugins: { legend: { display: false }, tooltip: { backgroundColor: '#fff', titleColor:'#111827', bodyColor:'#6b7280', borderColor:'#e5e7eb', borderWidth:1, padding:10, cornerRadius:6 } },
+    animation: { duration: 800, easing: 'easeOutQuart' }
+  }, extra);
+}
+
+// ══════════════════════════════════
+//  TAB 0: OVERVIEW
+// ══════════════════════════════════
+
+// App adoption bars
+const appData = [
+  { name: 'Teams Copilot',       users: 1400 },
+  { name: 'Copilot Chat (work)', users: 1318 },
+  { name: 'Outlook',             users: 1126 },
+  { name: 'M365 (app)',          users: 1116 },
+  { name: 'Word',                users: 1046 },
+  { name: 'Excel',               users: 936 },
+  { name: 'PowerPoint',          users: 837 },
+  { name: 'Copilot Chat (web)',   users: 729 },
+  { name: 'Loop',                users: 547 },
+  { name: 'Edge',                users: 238 },
+  { name: 'OneNote',             users: 114 },
+  { name: 'Copilot Agent',       users: 111 },
+];
+const maxUsers = 1411;
+const appContainer = document.getElementById('app-bars');
+appData.forEach(a => {
+  const pct = (a.users / maxUsers * 100).toFixed(1);
+  appContainer.innerHTML += `
+    <div class="app-row">
+      <div class="app-name">${a.name}</div>
+      <div class="app-bar-wrap"><div class="app-bar" style="width:${pct}%"></div></div>
+      <div class="app-count">${a.users.toLocaleString()}</div>
+      <div class="app-pct">${pct}%</div>
+    </div>`;
+});
+
+// Prompt distribution chart
+new Chart(document.getElementById('promptDistChart'), {
+  type: 'bar',
+  data: {
+    labels: ['1–49','50–99','100–199','200–399','400–799','800–1499','1500+'],
+    datasets: [{
+      label: 'Users',
+      data: [147, 89, 142, 268, 381, 262, 122],
+      backgroundColor: [RED, YELLOW, '#fbbf24', ORANGE3, ORANGE2, ORANGE, '#ea580c'],
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: baseOpts({
+    plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: ctx => ` ${ctx.parsed.y} users` } } },
+    scales: {
+      x: { grid:{display:false}, border:{display:false} },
+      y: { grid:{color:'#f3f4f6'}, border:{display:false}, ticks:{stepSize:100} }
+    }
+  })
+});
+
+// Seat donut
+function makeDonut(id, labels, data, colors, legendId) {
+  new Chart(document.getElementById(id), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: '#fff', hoverBorderColor: '#fff' }] },
+    options: baseOpts({
+      cutout: '65%',
+      plugins: { legend:{display:false}, tooltip:{ callbacks:{ label: ctx => ` ${ctx.label}: ${ctx.parsed.toLocaleString()}` } } }
+    })
+  });
+  if (legendId) {
+    const el = document.getElementById(legendId);
+    labels.forEach((l,i) => {
+      el.innerHTML += `<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div>${l}</div>`;
+    });
+  }
+}
+
+makeDonut('seatDonut',
+  ['Active (>50)', 'Low-Use (<50)', 'Inactive'],
+  [1264, 147, 0],
+  [GREEN, YELLOW, RED],
+  'seatLegend'
+);
+
+makeDonut('engagementDonut',
+  ['High (400+)', 'Medium (100–399)', 'Low (<100)'],
+  [765, 410, 236],
+  [ORANGE, ORANGE2, GRAY1],
+  'engLegend'
+);
+
+makeDonut('channelDonut',
+  ['Copilot Chat (work)', 'Copilot Chat (web)', 'Other Channels'],
+  [313074, 91563, 272085],
+  [ORANGE, ORANGE3, GRAY2],
+  'channelLegend'
+);
+
+// ══════════════════════════════════
+//  TAB 1: BY DIVISION
+// ══════════════════════════════════
+
+const divisions = [
+  { name: 'Syndicated Research', users:301, total:178673, avg:593.6, lowPct:5.98, lowCnt:18 },
+  { name: 'Sales',               users:341, total:172307, avg:505.3, lowPct:10.26, lowCnt:35 },
+  { name: 'One Research',        users:183, total:81241,  avg:443.9, lowPct:16.39, lowCnt:30 },
+  { name: 'Consulting',          users:125, total:73113,  avg:584.9, lowPct:4.80,  lowCnt:6  },
+  { name: 'Technology',          users:205, total:73212,  avg:357.1, lowPct:11.71, lowCnt:24 },
+  { name: 'Finance & Operations',users:104, total:38097,  avg:366.3, lowPct:18.27, lowCnt:19 },
+  { name: 'Human Resources',     users:32,  total:20149,  avg:629.7, lowPct:0,     lowCnt:0  },
+  { name: 'Marketing',           users:40,  total:19628,  avg:490.7, lowPct:5.00,  lowCnt:2  },
+  { name: 'New Product Dev',     users:4,   total:1405,   avg:351.2, lowPct:0,     lowCnt:0  },
+  { name: 'CSR',                 users:2,   total:493,    avg:246.5, lowPct:50.0,  lowCnt:1  },
+];
+
+// Division prompt bar
+new Chart(document.getElementById('divPromptChart'), {
+  type: 'bar',
+  data: {
+    labels: divisions.map(d=>d.name),
+    datasets: [{
+      label: 'Total Prompts',
+      data: divisions.map(d=>d.total),
+      backgroundColor: divisions.map((d,i) => i<3 ? ORANGE : i<6 ? ORANGE2 : ORANGE3),
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: baseOpts({
+    indexAxis: 'y',
+    scales: {
+      x: { grid:{color:'#f3f4f6'}, border:{display:false}, ticks:{callback:v=>v>=1000?`${(v/1000).toFixed(0)}k`:v} },
+      y: { grid:{display:false}, border:{display:false}, ticks:{font:{size:11}} }
+    }
+  })
+});
+
+// Division avg bar
+new Chart(document.getElementById('divAvgChart'), {
+  type: 'bar',
+  data: {
+    labels: divisions.map(d=>d.name),
+    datasets: [{
+      label: 'Avg Prompts/Person',
+      data: divisions.map(d=>d.avg),
+      backgroundColor: divisions.map(d => d.avg > 550 ? ORANGE : d.avg > 400 ? ORANGE2 : GRAY1),
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: baseOpts({
+    indexAxis: 'y',
+    scales: {
+      x: { grid:{color:'#f3f4f6'}, border:{display:false} },
+      y: { grid:{display:false}, border:{display:false}, ticks:{font:{size:11}} }
+    }
+  })
+});
+
+// Division table
+const divTbody = document.getElementById('divTable');
+divisions.forEach(d => {
+  const health = d.lowPct <= 6 ? '<span class="flag flag-g">🟢 Healthy</span>'
+               : d.lowPct <= 15 ? '<span class="flag flag-y">🟡 Watch</span>'
+               : '<span class="flag flag-r">🔴 At Risk</span>';
+  divTbody.innerHTML += `<tr>
+    <td><strong>${d.name}</strong></td>
+    <td class="right num">${d.users.toLocaleString()}</td>
+    <td class="right num">${d.total.toLocaleString()}</td>
+    <td class="right num">${d.avg}</td>
+    <td class="right num">${d.lowPct.toFixed(1)}%</td>
+    <td class="right num">${d.lowCnt}</td>
+    <td>${health}</td>
+  </tr>`;
+});
+
+// ══════════════════════════════════
+//  TAB 2: BY LOCATION
+// ══════════════════════════════════
+
+const locations = [
+  { name:'London',      region:'EMEA', users:266, total:145313, avg:546.3, lowPct:9.02 },
+  { name:'Bangalore',   region:'APAC', users:305, total:126453, avg:414.6, lowPct:11.15 },
+  { name:'Vilnius',     region:'EMEA', users:171, total:71648,  avg:419.0, lowPct:14.62 },
+  { name:'Chicago',     region:'AMER', users:147, total:64419,  avg:438.2, lowPct:4.76 },
+  { name:'Tokyo',       region:'APAC', users:40,  total:34916,  avg:872.9, lowPct:5.00 },
+  { name:'Mexico City', region:'AMER', users:42,  total:33910,  avg:807.4, lowPct:4.76 },
+  { name:'Singapore',   region:'APAC', users:51,  total:33033,  avg:647.7, lowPct:5.88 },
+  { name:'Cape Town',   region:'EMEA', users:68,  total:28600,  avg:420.6, lowPct:11.76 },
+  { name:'São Paulo',   region:'AMER', users:31,  total:22102,  avg:713.0, lowPct:3.23 },
+  { name:'Shanghai',    region:'APAC', users:78,  total:16454,  avg:210.9, lowPct:23.08 },
+  { name:'Santiago',    region:'AMER', users:26,  total:15900,  avg:611.5, lowPct:11.54 },
+  { name:'Dusseldorf',  region:'EMEA', users:28,  total:13022,  avg:465.1, lowPct:21.43 },
+  { name:'Seoul',       region:'APAC', users:19,  total:12061,  avg:634.8, lowPct:10.53 },
+  { name:'Dubai',       region:'EMEA', users:35,  total:10963,  avg:313.2, lowPct:8.57 },
+  { name:'Hong Kong',   region:'APAC', users:14,  total:9695,   avg:692.5, lowPct:21.43 },
+  { name:'Sydney',      region:'APAC', users:9,   total:5460,   avg:606.7, lowPct:0 },
+  { name:'Mexico',      region:'AMER', users:2,   total:1315,   avg:657.5, lowPct:0 },
+];
+
+const regColors = { APAC: ORANGE, AMER: GREEN, EMEA: BLUE };
+
+new Chart(document.getElementById('locPromptChart'), {
+  type: 'bar',
+  data: {
+    labels: locations.map(l=>l.name),
+    datasets: [{
+      label: 'Total Prompts',
+      data: locations.map(l=>l.total),
+      backgroundColor: locations.map(l=>regColors[l.region]+'cc'),
+      borderColor: locations.map(l=>regColors[l.region]),
+      borderWidth: 1,
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: baseOpts({
+    indexAxis: 'y',
+    scales: {
+      x: { grid:{color:'#f3f4f6'}, border:{display:false}, ticks:{callback:v=>v>=1000?`${(v/1000).toFixed(0)}k`:v} },
+      y: { grid:{display:false}, border:{display:false}, ticks:{font:{size:10}} }
+    }
+  })
+});
+
+// Region donut
+const regionTotals = {APAC:0,AMER:0,EMEA:0};
+locations.forEach(l => regionTotals[l.region] += l.total);
+makeDonut('regionDonut',
+  ['APAC','Americas','EMEA'],
+  [regionTotals.APAC, regionTotals.AMER, regionTotals.EMEA],
+  [ORANGE, GREEN, BLUE],
+  'regionLegend'
+);
+
+// Location table
+const locTbody = document.getElementById('locTable');
+const regionTagClass = {APAC:'tag-apac',AMER:'tag-amer',EMEA:'tag-emea'};
+locations.forEach(l => {
+  const intensity = l.avg > 600 ? '<span class="flag flag-g">🔥 High</span>'
+                  : l.avg > 400 ? '<span class="flag flag-y">〜 Medium</span>'
+                  : '<span class="flag flag-r">❄ Low</span>';
+  locTbody.innerHTML += `<tr>
+    <td><strong>${l.name}</strong></td>
+    <td><span class="region-tag ${regionTagClass[l.region]}">${l.region}</span></td>
+    <td class="right num">${l.users}</td>
+    <td class="right num">${l.total.toLocaleString()}</td>
+    <td class="right num">${l.avg}</td>
+    <td class="right num">${l.lowPct.toFixed(1)}%</td>
+    <td>${intensity}</td>
+  </tr>`;
+});
+
+// ══════════════════════════════════
+//  TAB 3: EMP vs CONTRACTOR
+// ══════════════════════════════════
+
+new Chart(document.getElementById('empConBar'), {
+  type: 'bar',
+  data: {
+    labels: ['Total Prompts', 'Avg Prompts/Person', 'Avg Active Days'],
+    datasets: [
+      { label: 'Employees', data: [524834, 492, 58], backgroundColor: BLUE+'cc', borderColor: BLUE, borderWidth:1, borderRadius:4 },
+      { label: 'Contractors', data: [85664, 249, 36], backgroundColor: ORANGE+'cc', borderColor: ORANGE, borderWidth:1, borderRadius:4 }
+    ]
+  },
+  options: baseOpts({
+    plugins: { legend:{ display:true, labels:{font:{size:11}} }, tooltip:{} },
+    scales: {
+      x: { grid:{display:false}, border:{display:false} },
+      y: { grid:{color:'#f3f4f6'}, border:{display:false} }
+    }
+  })
+});
+
+new Chart(document.getElementById('contractorLocChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Bangalore','London','Chicago','Vilnius','Other'],
+    datasets: [{
+      data: [186, 38, 42, 31, 47],
+      backgroundColor: [ORANGE, ORANGE2, ORANGE3, '#fde68a', GRAY2],
+      borderWidth: 2, borderColor: '#fff'
+    }]
+  },
+  options: baseOpts({ cutout:'60%' })
+});
+
+// ══════════════════════════════════
+//  TAB 4: TOP PERFORMERS
+// ══════════════════════════════════
+
+const top10 = [
+  { name:'Avani Bharwad',    div:'Technology',          loc:'London',      prompts:6912, days:129 },
+  { name:'Sanjay Prathapan', div:'One Research',        loc:'Bangalore',   prompts:4100, days:95  },
+  { name:'Kahori Izawa',     div:'Sales',               loc:'Tokyo',       prompts:3776, days:108 },
+  { name:'Rae Chang',        div:'Consulting',          loc:'Singapore',   prompts:3097, days:97  },
+  { name:'Sunny Moon',       div:'Syndicated Research', loc:'Singapore',   prompts:2922, days:123 },
+  { name:'Max Amagliani',    div:'Sales',               loc:'London',      prompts:2897, days:130 },
+  { name:'Allie Young',      div:'Sales',               loc:'Chicago',     prompts:2820, days:100 },
+  { name:'Lizzeth Reyes',    div:'Syndicated Research', loc:'Mexico City', prompts:2758, days:106 },
+  { name:'Karan Chawla',     div:'Syndicated Research', loc:'Bangalore',   prompts:2664, days:108 },
+  { name:'Paula Goni',       div:'Syndicated Research', loc:'Santiago',    prompts:2626, days:98  },
+];
+
+const rankClasses = ['rank-gold','rank-silver','rank-bronze'];
+const top10Tbody = document.getElementById('top10Table');
+top10.forEach((p,i) => {
+  const rankCls = rankClasses[i] || '';
+  const initials = p.name.split(' ').map(n=>n[0]).join('').slice(0,2);
+  top10Tbody.innerHTML += `<tr>
+    <td><span class="rank ${rankCls}">${i+1}</span></td>
+    <td>
+      <div class="person-cell">
+        <div class="avatar">${initials}</div>
+        <div><div class="person-name">${p.name}</div><div class="person-div">${p.div} · ${p.loc}</div></div>
+      </div>
+    </td>
+    <td class="right num">${p.prompts.toLocaleString()}</td>
+    <td class="right num">${p.days}</td>
+  </tr>`;
+});
+
+// Division champion chart
+const divChamps = divisions.slice().sort((a,b)=>b.avg-a.avg);
+new Chart(document.getElementById('divChampChart'), {
+  type: 'bar',
+  data: {
+    labels: divChamps.map(d=>d.name),
+    datasets: [{
+      label: 'Avg Prompts/Person',
+      data: divChamps.map(d=>d.avg),
+      backgroundColor: divChamps.map((d,i) => i===0 ? ORANGE : i<3 ? ORANGE2 : ORANGE3),
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: baseOpts({
+    indexAxis: 'y',
+    scales: {
+      x: { grid:{color:'#f3f4f6'}, border:{display:false} },
+      y: { grid:{display:false}, border:{display:false}, ticks:{font:{size:11}} }
+    }
+  })
+});
+
+// Location intensity chart
+const locSorted = locations.slice().sort((a,b)=>b.avg-a.avg);
+new Chart(document.getElementById('locIntensityChart'), {
+  type: 'bar',
+  data: {
+    labels: locSorted.map(l=>l.name),
+    datasets: [{
+      label: 'Avg Prompts/Person',
+      data: locSorted.map(l=>l.avg),
+      backgroundColor: locSorted.map(l => l.avg>600?ORANGE:l.avg>400?ORANGE2:GRAY1),
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: baseOpts({
+    plugins: { legend:{display:false}, tooltip:{} },
+    scales: {
+      x: { grid:{display:false}, border:{display:false}, ticks:{font:{size:10}, maxRotation:35} },
+      y: { grid:{color:'#f3f4f6'}, border:{display:false} }
+    }
+  })
+});
+
+// ══════════════════════════════════
+//  TAB 4: BY DEPARTMENT
+// ══════════════════════════════════
+
+const departments = [
+  { name:'Enterprise',                users:247, total:126822, avg:513.4, lowPct:8.91,  lowCnt:22 },
+  { name:'Project Delivery',          users:187, total:121872, avg:651.7, lowPct:4.28,  lowCnt:8  },
+  { name:'Consulting Research',       users:91,  total:57549,  avg:632.4, lowPct:4.40,  lowCnt:4  },
+  { name:'Research Methods',          users:127, total:54918,  avg:432.4, lowPct:18.11, lowCnt:23 },
+  { name:'Software Engineering',      users:123, total:33181,  avg:269.8, lowPct:12.20, lowCnt:15 },
+  { name:'Partnerships',              users:57,  total:30055,  avg:527.3, lowPct:12.28, lowCnt:7  },
+  { name:'Client & Insights',         users:36,  total:20714,  avg:575.4, lowPct:5.56,  lowCnt:2  },
+  { name:'Practices',                 users:31,  total:15862,  avg:511.7, lowPct:6.45,  lowCnt:2  },
+  { name:'Consulting Sales',          users:34,  total:15564,  avg:457.8, lowPct:5.88,  lowCnt:2  },
+  { name:'Data Delivery',             users:23,  total:13847,  avg:602.0, lowPct:8.70,  lowCnt:2  },
+  { name:'Technology Operations',     users:30,  total:13298,  avg:443.3, lowPct:6.67,  lowCnt:2  },
+  { name:'Research Applications',     users:20,  total:11540,  avg:577.0, lowPct:15.00, lowCnt:3  },
+  { name:'Enterprise Applications',   users:16,  total:10702,  avg:668.9, lowPct:0,     lowCnt:0  },
+  { name:'Economies & Consumers',     users:21,  total:10537,  avg:501.8, lowPct:14.29, lowCnt:3  },
+  { name:'Finance',                   users:46,  total:10078,  avg:219.1, lowPct:28.26, lowCnt:13 },
+  { name:'Marketing',                 users:23,  total:9985,   avg:434.1, lowPct:4.35,  lowCnt:1  },
+  { name:'Communications',            users:17,  total:9643,   avg:567.2, lowPct:5.88,  lowCnt:1  },
+  { name:'Subscription Products',     users:14,  total:9231,   avg:659.4, lowPct:0,     lowCnt:0  },
+  { name:'Sales Enablement & Ops',    users:23,  total:8984,   avg:390.6, lowPct:21.74, lowCnt:5  },
+  { name:'Office Management',         users:20,  total:8868,   avg:443.4, lowPct:20.00, lowCnt:4  },
+  { name:'HR',                        users:19,  total:8684,   avg:457.1, lowPct:0,     lowCnt:0  },
+  { name:'Editorial',                 users:28,  total:8525,   avg:304.5, lowPct:10.71, lowCnt:3  },
+  { name:'Research Support',          users:17,  total:7169,   avg:421.7, lowPct:23.53, lowCnt:4  },
+  { name:'Recruitment',               users:9,   total:5929,   avg:658.8, lowPct:0,     lowCnt:0  },
+  { name:'Training',                  users:3,   total:4780,   avg:1593.3,lowPct:0,     lowCnt:0  },
+  { name:'Strategy & Transformation', users:8,   total:3875,   avg:484.4, lowPct:0,     lowCnt:0  },
+  { name:'Architecture',              users:7,   total:3517,   avg:502.4, lowPct:0,     lowCnt:0  },
+  { name:'Growth Acceleration',       users:7,   total:3456,   avg:493.7, lowPct:0,     lowCnt:0  },
+  { name:'Research AI',               users:8,   total:3292,   avg:411.5, lowPct:12.50, lowCnt:1  },
+  { name:'Directors',                 users:8,   total:2594,   avg:324.2, lowPct:12.50, lowCnt:1  },
+  { name:'Survey',                    users:3,   total:2189,   avg:729.7, lowPct:0,     lowCnt:0  },
+  { name:'Sales Leadership',          users:5,   total:1884,   avg:376.8, lowPct:20.00, lowCnt:1  },
+  { name:'AI Research & Dev',         users:7,   total:1795,   avg:256.4, lowPct:42.86, lowCnt:3  },
+  { name:'Operations',                users:1,   total:1122,   avg:1122.0,lowPct:0,     lowCnt:0  },
+  { name:'Corporates',                users:2,   total:1106,   avg:553.0, lowPct:0,     lowCnt:0  },
+  { name:'Research Product Dev',      users:2,   total:957,    avg:478.5, lowPct:0,     lowCnt:0  },
+  { name:'Research Leadership',       users:2,   total:914,    avg:457.0, lowPct:0,     lowCnt:0  },
+  { name:'Legal',                     users:5,   total:858,    avg:171.6, lowPct:20.00, lowCnt:1  },
+  { name:'DE&I',                      users:1,   total:756,    avg:756.0, lowPct:0,     lowCnt:0  },
+  { name:'Product Design',            users:4,   total:650,    avg:162.5, lowPct:25.00, lowCnt:1  },
+  { name:'CSR',                       users:2,   total:493,    avg:246.5, lowPct:50.00, lowCnt:1  },
+  { name:'Sales Product Dev',         users:2,   total:448,    avg:224.0, lowPct:0,     lowCnt:0  },
+  { name:'Syndicated Industry',       users:1,   total:75,     avg:75.0,  lowPct:0,     lowCnt:0  },
+];
+
+// Top 20 by total prompts chart
+const top20ByTotal = departments.slice(0,20);
+new Chart(document.getElementById('deptPromptChart'), {
+  type: 'bar',
+  data: {
+    labels: top20ByTotal.map(d=>d.name),
+    datasets:[{
+      label:'Total Prompts',
+      data: top20ByTotal.map(d=>d.total),
+      backgroundColor: top20ByTotal.map((d,i)=>i<3?ORANGE:i<8?ORANGE2:ORANGE3),
+      borderRadius:4, borderSkipped:false
+    }]
+  },
+  options: baseOpts({
+    indexAxis:'y',
+    scales:{
+      x:{grid:{color:'#f3f4f6'},border:{display:false},ticks:{callback:v=>v>=1000?`${(v/1000).toFixed(0)}k`:v}},
+      y:{grid:{display:false},border:{display:false},ticks:{font:{size:10}}}
+    }
+  })
+});
+
+// Top 20 by avg prompts chart (sorted)
+const top20ByAvg = departments.filter(d=>d.users>=5).slice().sort((a,b)=>b.avg-a.avg).slice(0,20);
+new Chart(document.getElementById('deptAvgChart'), {
+  type: 'bar',
+  data: {
+    labels: top20ByAvg.map(d=>d.name),
+    datasets:[{
+      label:'Avg Prompts/Person',
+      data: top20ByAvg.map(d=>d.avg),
+      backgroundColor: top20ByAvg.map(d=>d.avg>600?ORANGE:d.avg>400?ORANGE2:GRAY1),
+      borderRadius:4, borderSkipped:false
+    }]
+  },
+  options: baseOpts({
+    indexAxis:'y',
+    scales:{
+      x:{grid:{color:'#f3f4f6'},border:{display:false}},
+      y:{grid:{display:false},border:{display:false},ticks:{font:{size:10}}}
+    }
+  })
+});
+
+// Department health table
+const deptTbody = document.getElementById('deptTable');
+departments.forEach((d,i)=>{
+  const health = d.lowPct === 0 ? '<span class="flag flag-g">🟢 Excellent</span>'
+               : d.lowPct <= 8  ? '<span class="flag flag-g">🟢 Healthy</span>'
+               : d.lowPct <= 18 ? '<span class="flag flag-y">🟡 Watch</span>'
+               : '<span class="flag flag-r">🔴 At Risk</span>';
+  deptTbody.innerHTML += `<tr>
+    <td style="color:var(--muted2);font-size:10px">${i+1}</td>
+    <td><strong>${d.name}</strong></td>
+    <td class="right num">${d.users}</td>
+    <td class="right num">${d.total.toLocaleString()}</td>
+    <td class="right num">${d.avg}</td>
+    <td class="right num">${d.lowPct.toFixed(1)}%</td>
+    <td class="right num">${d.lowCnt}</td>
+    <td>${health}</td>
+  </tr>`;
+});
+</script>
+</body>
+</html>
